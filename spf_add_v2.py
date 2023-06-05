@@ -69,15 +69,16 @@ def sorted_strings(converted_list):
 # compare the list of string addresses to the list of networks
 # if there is a match we replace the string address with the network
 # add ip4: to the beginning of each item in the list
-def network_replace(string_list, network_list):
+def network_replace(string_list, networks):
     formatted_list = []
-    for address in string_list:
-        for network in network_list:
+    for index, address in enumerate(string_list):
+        for network in networks:
             if network.split("/", 1)[0] == address:
-                formatted_list.append("ip4:"+network)
+                string_list[index] = network
+                break
             else:
                 pass
-        formatted_list.append("ip4:"+address)
+        formatted_list.append("ip4:"+string_list[index])
     return formatted_list
 
 
@@ -90,7 +91,7 @@ def add_toRecords(formatted_list, sublists):
         record_dict[i] = []
         for address in formatted_list:
             try:
-                if count <= 26:
+                if count < 26:
                     record_dict[i].append(formatted_list[location + count])
                     count += 1
                 else:
@@ -106,8 +107,8 @@ def add_recordInfo(record_dict):
         if i == 0:
             record_dict[i].insert(0, "babson.edu")
             record_dict[i].insert(1, "v=spf1")
-            record_dict[i].append("include :spf"+str(i+1)+".babson.edu ~all")
-        elif i == len(record_dict):
+            record_dict[i].append("include:spf"+str(i+1)+".babson.edu ~all")
+        elif i == len(record_dict) - 1:
             record_dict[i].insert(0, "spf"+str(i)+".babson.edu")
             record_dict[i].insert(1, "v=spf1")
             record_dict[i].append("~all")
@@ -119,15 +120,44 @@ def add_recordInfo(record_dict):
 
 # convert each sublist to a string
     # write each list to a file
+def output_newRecord(record_dict):
+    with open("new_record.txt", "w+") as f:
+        for i in range(len(record_dict)):
+            f.write(" ".join(record_dict[i]))
+            f.write("\n")
+            f.write("\n")
+            print(" ".join(record_dict[i]))
+            print("\n")
+    return None
 
-# print(create_spfList(load_record()))
-#print(load_additions())
-combined_record = combine_lists(create_spfList(load_record()), load_additions())
-network_list = network_list(combined_record)
-sorted_list = sorted_strings(address_convert(combined_record))
-# print(network_replace(sorted_list, network_list))
+def main():
+    records = load_record()
+    selection = ""
+    while selection != "q":
+        print("-"*60)
+        print(" " * 25 + "SPF EDITOR")
+        print("-"*60)
+        print("1) Add an IP or list of IPs to the current record")
+        print("2) Remove an IP or list of IPs to the current record")
+        print("3) Output the record to a file")
+        print("q) Quit")
+        print()
+        selection = input("Please make a selection: ")
+        if selection == "1":
+            combined_record = combine_lists(create_spfList(records), load_additions())
+            list_ofNetworks = network_list(combined_record)
+            sorted_IPClass = address_convert(combined_record)
+            sorted_stringRecord = sorted_strings(sorted_IPClass)
+            replaced_networks = network_replace(sorted_stringRecord, list_ofNetworks)
+            sublists = math.ceil(len(replaced_networks)/26)
+            form_records = add_toRecords(replaced_networks, sublists)
+            add_spfInfo = add_recordInfo(form_records)
 
-# calculate total number of sublists len(list) / 29
-sublists = math.ceil(len(network_replace(sorted_list, network_list))/29)
-record_dict = add_toRecords(network_replace(sorted_list, network_list), sublists)
-print(add_recordInfo(record_dict))
+        elif selection == "2":
+            pass
+
+        elif selection == "3":
+            output_newRecord(add_spfInfo)
+    return None
+
+main()
