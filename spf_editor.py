@@ -7,8 +7,9 @@ def load_record():
     with open(record, 'r') as f:
         spf = f.readlines()
     return spf
+
 # create a list of all IPs
-def create_spfList(spf):
+def create_ipv4_list(spf):
     spf_list = []
     address_list = []
     for item in spf:
@@ -17,6 +18,18 @@ def create_spfList(spf):
     flattenlist = sum(spf_list,[])
     for item in flattenlist:
         if "ip4:" in item:
+            address_list.append(item[4:])
+    return address_list
+
+def create_ipv6_list(spf):
+    spf_list = []
+    address_list = []
+    for item in spf:
+        spf_list.append(item.split())
+    
+    flattenlist = sum(spf_list,[])
+    for item in flattenlist:
+        if "ip6:" in item:
             address_list.append(item[4:])
     return address_list
 
@@ -49,10 +62,12 @@ def remove_list():
     return rem_list
 
 # remove a list of ips from the record
-def remove_addresses(address_list, rem_list):
+def remove_addresses(address_list, rem_list, ipv6_list):
     for address in address_list:
         if address in rem_list:
             address_list.remove(address)
+    for address in ipv6_list:
+        address_list.append(address)
     return address_list
 
 # create a list of all IPs
@@ -82,9 +97,11 @@ def address_convert(spf_list):
     return sorted(converted_list)
 
 # convert the list back into a list of string objects
-def sorted_strings(converted_list):
+def sorted_strings(converted_list, ipv6_list):
     string_list = []
     for address in converted_list:
+        string_list.append(str(address))
+    for address in ipv6_list:
         string_list.append(str(address))
     return string_list
 
@@ -100,7 +117,10 @@ def network_replace(string_list, networks):
                 break
             else:
                 pass
-        formatted_list.append("ip4:"+string_list[index])
+        if ":" in string_list[index]:
+            formatted_list.append("ip6:"+string_list[index])
+        else:
+            formatted_list.append("ip4:"+string_list[index])
     return formatted_list
 
 
@@ -154,6 +174,7 @@ def output_newRecord(record_dict):
 
 def main():
     records = load_record()
+    ipv6_list = create_ipv6_list(records)
     selection = ""
     while selection != "q":
         print("-"*60)
@@ -166,17 +187,17 @@ def main():
         print()
         selection = input("Please make a selection: ")
         if selection == "1":
-            combined_record = combine_lists(create_spfList(records), load_additions())
+            combined_record = combine_lists(create_ipv4_list(records), load_additions())
             list_ofNetworks = network_list(combined_record)
             sorted_IPClass = address_convert(combined_record)
-            sorted_stringRecord = sorted_strings(sorted_IPClass)
+            sorted_stringRecord = sorted_strings(sorted_IPClass, ipv6_list)
             replaced_networks = network_replace(sorted_stringRecord, list_ofNetworks)
             sublists = math.ceil(len(replaced_networks)/26)
             form_records = add_toRecords(replaced_networks, sublists)
             add_spfInfo = add_recordInfo(form_records)
 
         elif selection == "2":
-            removed_list = remove_addresses(create_spfList(records), remove_list())
+            removed_list = remove_addresses(create_ipv4_list(records), remove_list(), ipv6_list)
             sublists = math.ceil(len(removed_list)/26)
             form_records = add_toRecords(removed_list, sublists)
             add_spfInfo = add_recordInfo(form_records)
