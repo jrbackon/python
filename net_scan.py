@@ -1,4 +1,5 @@
 import nmap
+
 # assigns the portscanner to the variable nm.
 nm = nmap.PortScanner()
 
@@ -27,8 +28,8 @@ def subnets(subnets):
     return nets
 
 # this code block iterates over each subnet and writes the scan output ip, hostname to a csv file.
-nets = subnets('server_subnets.txt')
-with open('assets.csv', 'w+') as assets:
+nets = subnets(r'discovery subnets\server_subnets.txt')
+with open(r'C:\Users\jbackon\OneDrive - Babson College\Assets\Discovery Scans\server_assets.csv', 'w+') as assets:
     assets.write('hostname, ip\n')
     for net in nets:
         result = scan(net)
