@@ -1,7 +1,10 @@
 import nmap
+import datetime
 
 # assigns the portscanner to the variable nm.
 nm = nmap.PortScanner()
+
+today = f"{datetime.date.today()}.csv"
 
 # scans the target
 def scan(net):
@@ -9,32 +12,26 @@ def scan(net):
 
 # creates a list of host ips discovered in the scan
 def hosts(scan):
-    host_list = []
-    for host in scan['scan']:
-        host_list.append(host)
-    return host_list
+    return list(scan['scan'].keys())
 
 # using the list of host ips this function creates a list of hostnames
 def hostnames(hosts, scan):
-    hostname_list = []
-    for host in hosts:
-        hostname_list.append(scan['scan'][host]['hostnames'][0]['name'])
-    return hostname_list
+    return [scan['scan'][host]['hostnames'][0]['name'] for host in hosts]
 
 # this function reads in the list of subnets from a file and puts them in a python list
 def subnets(subnets):
     with open(subnets, 'r') as f:
-        nets = f.readline().split(',')
-    return nets
-
+        return f.readline().strip().split(',')
+     
 # this code block iterates over each subnet and writes the scan output ip, hostname to a csv file.
-nets = subnets(r'discovery subnets\server_subnets.txt')
-with open(r'C:\Users\jbackon\OneDrive - Babson College\Assets\Discovery Scans\server_assets.csv', 'w+') as assets:
+nets = subnets(r'discovery_subnets\server_subnets.txt')
+output_file = r'C:\Users\jbackon\OneDrive - Babson College\Assets\Discovery Scans\serverlist_' + today
+with open(output_file, 'w+') as assets:
     assets.write('hostname, ip\n')
     for net in nets:
         result = scan(net)
-        print(net + " has been scanned successfully.")
+        print(f"{net} has been scanned successfully.")
         endpoints = hosts(result)
         names = hostnames(endpoints, result)
-        for i in range(len(endpoints)):
-            assets.write(names[i] + ', ' + endpoints[i] + '\n')
+        for name, endpoint in zip(names, endpoints):
+            assets.write(f"{name}, {endpoint}\n")
